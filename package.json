@@ -1,6 +1,6 @@
 {
     "name": "git-rev-zero",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "Minimal, synchronous, dependency-free Git revision info library",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
