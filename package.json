@@ -1,0 +1,27 @@
+{
+    "name": "git-rev-zero",
+    "version": "0.0.1",
+    "description": "Minimal, synchronous, dependency-free Git revision info library",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "prepublishOnly": "npm run build",
+        "test": "jest"
+    },
+    "keywords": [
+        "git",
+        "revision",
+        "commit",
+        "typescript"
+    ],
+    "author": "dan norwood",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/jest": "^29.5.14",
+        "@types/node": "^22.13.10",
+        "jest": "^29.7.0",
+        "ts-jest": "^29.2.6",
+        "typescript": "^5.8.2"
+    }
+}
