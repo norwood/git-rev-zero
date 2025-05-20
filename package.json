@@ -2,6 +2,10 @@
     "name": "git-rev-zero",
     "version": "0.0.2",
     "description": "Minimal, synchronous, dependency-free Git revision info library",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/example/git-rev-zero.git"
+    },
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
