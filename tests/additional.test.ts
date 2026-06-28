@@ -9,6 +9,7 @@ function createTempRepo(): string {
   child_process.execSync('git init', { cwd: dir, stdio: 'ignore' });
   child_process.execSync('git config user.name "Test"', { cwd: dir, stdio: 'ignore' });
   child_process.execSync('git config user.email "test@example.com"', { cwd: dir, stdio: 'ignore' });
+  child_process.execSync('git config commit.gpgsign false', { cwd: dir, stdio: 'ignore' });
   fs.writeFileSync(path.join(dir, 'file.txt'), 'temp');
   child_process.execSync('git add file.txt', { cwd: dir, stdio: 'ignore' });
   child_process.execSync('git commit -m "init"', { cwd: dir, stdio: 'ignore' });
