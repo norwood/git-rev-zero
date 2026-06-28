@@ -1,43 +1,48 @@
+import { execSync } from 'node:child_process';
 import { GitRevZero } from '../src';
+
+function git(command: string): string {
+  return execSync(`git ${command}`, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim();
+}
+
+function gitTag(): string | null {
+  try {
+    return git('describe --tags --exact-match');
+  } catch {
+    return null;
+  }
+}
 
 describe('GitRevZero', () => {
   it('should return a valid short hash', () => {
-    expect(GitRevZero.shortHash()).toMatch(/^[0-9a-f]{7}$/);
-    console.log('Short hash:', GitRevZero.shortHash());
+    expect(GitRevZero.shortHash()).toBe(git('rev-parse --short=7 HEAD'));
   });
 
   it('should return a valid full hash', () => {
-    expect(GitRevZero.fullHash()).toMatch(/^[0-9a-f]{40}$/);
-    console.log('Full hash:', GitRevZero.fullHash());
+    expect(GitRevZero.fullHash()).toBe(git('rev-parse HEAD'));
   });
 
   it('should return the current branch', () => {
-    expect(GitRevZero.branch()).toBeDefined();
-    console.log('Current branch:', GitRevZero.branch());
+    expect(GitRevZero.branch()).toBe(git('rev-parse --abbrev-ref HEAD'));
   });
 
   it('should return the latest commit message', () => {
-    expect(GitRevZero.message()).toBeDefined();
-    console.log('Latest commit message:', GitRevZero.message());
+    expect(GitRevZero.message()).toBe(git('log -1 --pretty=%B'));
   });
 
   it('should return the latest commit author', () => {
-    expect(GitRevZero.author()).toBeDefined();
-    console.log('Latest commit author:', GitRevZero.author());
+    expect(GitRevZero.author()).toBe(git('log -1 --pretty=format:%an'));
   });
 
-  it('should return the latest commit date', () => {
-    expect(GitRevZero.date()).toBeDefined();
-    console.log('Latest commit date:', GitRevZero.date());
+  it('should return the latest commit date as ISO 8601', () => {
+    expect(GitRevZero.date()).toBe(git('log -1 --pretty=format:%ad --date=iso-strict'));
+    expect(GitRevZero.date()).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/);
   });
 
   it('should return null if not on a tag', () => {
-    const tag = GitRevZero.tag();
-    if (tag) {
-      expect(tag).toBeDefined();
-    } else {
-      expect(tag).toBeNull();
-    }
-    console.log('Tag (if any):', tag);
+    expect(GitRevZero.tag()).toBe(gitTag());
   });
 });

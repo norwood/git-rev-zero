@@ -4,16 +4,29 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
+function git(command: string, cwd = process.cwd()): string {
+  return child_process.execSync(`git ${command}`, {
+    cwd,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim();
+}
+
 function createTempRepo(): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grz-'));
-  child_process.execSync('git init', { cwd: dir, stdio: 'ignore' });
-  child_process.execSync('git config user.name "Test"', { cwd: dir, stdio: 'ignore' });
-  child_process.execSync('git config user.email "test@example.com"', { cwd: dir, stdio: 'ignore' });
-  child_process.execSync('git config commit.gpgsign false', { cwd: dir, stdio: 'ignore' });
-  fs.writeFileSync(path.join(dir, 'file.txt'), 'temp');
-  child_process.execSync('git add file.txt', { cwd: dir, stdio: 'ignore' });
-  child_process.execSync('git commit -m "init"', { cwd: dir, stdio: 'ignore' });
+  git('init', dir);
+  git('config user.name "Test"', dir);
+  git('config user.email "test@example.com"', dir);
+  git('config commit.gpgsign false', dir);
+  git('config tag.gpgsign false', dir);
+  commitFile(dir, 'file.txt', 'temp', 'init');
   return dir;
+}
+
+function commitFile(repo: string, fileName: string, content: string, message: string): void {
+  fs.writeFileSync(path.join(repo, fileName), content);
+  git(`add ${fileName}`, repo);
+  git(`commit -m "${message}"`, repo);
 }
 
 describe('GitRevZero additional tests', () => {
@@ -34,17 +47,47 @@ describe('GitRevZero additional tests', () => {
     expect(hash).toMatch(/^[0-9a-f]{4}$/);
   });
 
+  test('shortHash rejects unsafe runtime length values', () => {
+    expect(() => GitRevZero.shortHash('7; echo injected' as unknown as number)).toThrow(TypeError);
+    expect(() => GitRevZero.shortHash(1.5)).toThrow(TypeError);
+    expect(() => GitRevZero.shortHash(Number.NaN)).toThrow(TypeError);
+  });
+
   test('branch returns HEAD when detached', () => {
     const repo = createTempRepo();
-    child_process.execSync('git checkout --detach', { cwd: repo, stdio: 'ignore' });
+    git('checkout --detach', repo);
     process.chdir(repo);
     expect(GitRevZero.branch()).toBe('HEAD');
+  });
+
+  test('tag returns exact tag when HEAD is tagged', () => {
+    const repo = createTempRepo();
+    git('tag v-test', repo);
+    process.chdir(repo);
+    expect(GitRevZero.tag()).toBe('v-test');
   });
 
   test('tag returns null when commit has no tag', () => {
     const repo = createTempRepo();
     process.chdir(repo);
     expect(GitRevZero.tag()).toBeNull();
+  });
+
+  test('tag returns null when tags exist but HEAD is untagged', () => {
+    const repo = createTempRepo();
+    git('tag v-initial', repo);
+    commitFile(repo, 'second.txt', 'second', 'second');
+    process.chdir(repo);
+    expect(GitRevZero.tag()).toBeNull();
+  });
+
+  test('tag does not write stderr for an untagged commit', () => {
+    const repo = createTempRepo();
+    process.chdir(repo);
+    const stderr = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+
+    expect(GitRevZero.tag()).toBeNull();
+    expect(stderr).not.toHaveBeenCalled();
   });
 
   test('fullHash shares prefix with shortHash', () => {
@@ -55,25 +98,16 @@ describe('GitRevZero additional tests', () => {
 
   test('author and date match git show', () => {
     const full = GitRevZero.fullHash();
-    const author = child_process.execSync(`git show -s --format=%an ${full}`, { encoding: 'utf8' }).trim();
-    const date = child_process.execSync(`git show -s --format=%ad ${full}`, { encoding: 'utf8' }).trim();
+    const author = git(`show -s --format=%an ${full}`);
+    const date = git(`show -s --format=%ad --date=iso-strict ${full}`);
     expect(GitRevZero.author()).toBe(author);
     expect(GitRevZero.date()).toBe(date);
-  });
-
-  test('tag falls back to null on command failure', () => {
-    jest.spyOn(child_process, 'execSync').mockImplementation(() => { throw new Error('fail'); });
-    expect(GitRevZero.tag()).toBeNull();
-  });
-
-  test('fullHash throws on command failure', () => {
-    jest.spyOn(child_process, 'execSync').mockImplementation(() => { throw new Error('fail'); });
-    expect(() => GitRevZero.fullHash()).toThrow('fail');
   });
 
   test('methods throw outside of git repository', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nogit-'));
     process.chdir(dir);
     expect(() => GitRevZero.fullHash()).toThrow();
+    expect(() => GitRevZero.tag()).toThrow();
   });
 });
