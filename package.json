@@ -4,7 +4,7 @@
     "description": "Minimal, synchronous, dependency-free Git revision info library",
     "repository": {
         "type": "git",
-        "url": "https://github.com/example/git-rev-zero.git"
+        "url": "https://github.com/norwood/git-rev-zero.git"
     },
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -12,7 +12,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "tsc",
+        "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",
         "prepublishOnly": "npm run build",
         "test": "jest"
     },
