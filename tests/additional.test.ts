@@ -1,5 +1,6 @@
 import { GitRevZero } from '../src';
 const child_process = require('node:child_process');
+import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -34,7 +35,7 @@ describe('GitRevZero additional tests', () => {
 
   afterEach(() => {
     process.chdir(originalCwd);
-    jest.restoreAllMocks();
+    mock.restore();
   });
 
   test('shortHash with custom length', () => {
@@ -84,7 +85,7 @@ describe('GitRevZero additional tests', () => {
   test('tag does not write stderr for an untagged commit', () => {
     const repo = createTempRepo();
     process.chdir(repo);
-    const stderr = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const stderr = spyOn(process.stderr, 'write').mockImplementation(() => true);
 
     expect(GitRevZero.tag()).toBeNull();
     expect(stderr).not.toHaveBeenCalled();
